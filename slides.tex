@@ -1,10 +1,11 @@
 % Presentation structure
 %
 % Part I: Preliminaries
-%   Introduction to @Web
-%   @Web core ontology
+%   The @Web platform
+%   @Web ontology
 %   Annotated tables
-%   Examples of constraints we want to verify automatically
+%   Guidelines
+%   Examples constraints
 %
 % Part II: RDF data validation: survey of the state of the art
 %   Shape Expressions
@@ -12,7 +13,7 @@
 %   Plain SPARQL
 %
 % Part III: Implementation
-%   Examples of actual constraints
+%   Examples of real constraints
 %   Live demo
 %
 % Part IV: Conclusions
@@ -24,6 +25,17 @@
 \documentclass{beamer}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
+\usepackage{xspace}
+
+% Convenience macros
+\newcommand{\atweb}{\textbf{@Web}\xspace}
+\newcommand{\partslide}[2]{
+  \begin{center}
+    \LARGE{#1} \\
+    \vspace{0.5cm}
+    \huge{#2}
+  \end{center}
+}
 
 % Remove navigation controls
 \usenavigationsymbolstemplate{}
@@ -32,7 +44,10 @@
 \setbeamertemplate{footline}[frame number]
 
 \title{Using SPARQL queries to express integrity constraints in RDF graphs}
-\subtitle{Final internship report}
+\subtitle{
+  \vspace{0.5cm}
+  Final internship report
+}
 \author{
   Leandro Lovisolo
 }
@@ -46,6 +61,212 @@
 
 \begin{frame}
   \titlepage
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Part I: Preliminaries                                                        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \partslide{Part I}{Preliminaries}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Problem statement}
+
+  \begin{itemize}
+    \item We have an RDF graph where we store experimental data extracted from
+      tables in scientific publications.
+
+    \item The data extraction process is done semi-manually, thus it's very
+      error-prone.
+
+    \item Therefore, \textbf{we want to verify the integrity of the annotated
+      data automatically.}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{The \atweb platform}
+  \framesubtitle{Introduction}
+
+  \begin{itemize}
+    \item A software platform used to annotate tables from scientific
+      publications in heterogeneous formats (PDF files, Excel spreadsheets,
+      etc.)
+
+    \item Data is stored in an RDF graph following a predefined OWL ontology.
+
+    \item Goal of my internship: add integrity constraint checking capabilities
+      to the \atweb platform.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{The \atweb platform}
+  \framesubtitle{Screenshot}
+
+  \begin{center}
+    \includegraphics[width=10cm]{atweb-screenshot-document.jpg}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \frametitle{The \atweb platform}
+  \framesubtitle{$n$-ary relation pattern}
+
+  \begin{itemize}
+    \item We're trying to represent experiments composed of many inputs and a
+      single output.
+
+    \item An OWL ontology is created where OWL classes are defined for each
+      kind of experiment we're interested in representing.
+
+    \item Instances of each experiment class are connected to their respective
+      input arguments and output argument via OWL object and data properties.
+
+    \item We're thus defining a pattern for $n$-ary relations.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{The \atweb platform}
+  \framesubtitle{Example $n$-ary relation}
+
+  \begin{center}
+    \includegraphics[width=10cm]{relation.jpg}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\atweb ontology}
+
+  \begin{center}
+    \includegraphics[width=10cm]{ontology.jpg}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Annotated tables}
+  \framesubtitle{Screenshot}
+
+  \begin{center}
+    \includegraphics[width=11cm]{atweb-screenshot-table.jpg}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Guidelines}
+
+  \framesubtitle{Screenshot}
+
+  \begin{center}
+    \includegraphics[width=10cm]{atweb-screenshot-guideline.jpg}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Example guideline}
+  \framesubtitle{Guideline}
+
+  \textit{``The output quantity of a step is equal to the sum of the quantity
+  of water used and the quantity of biomass present in the step.''}
+
+  \pause
+
+  $$output = waterInput + biomassInput$$
+\end{frame}
+
+\begin{frame}
+  \frametitle{Example guideline}
+  \framesubtitle{An annotated row that doesn't fulfill the guideline}
+
+  \begin{center}
+    \includegraphics[width=11cm]{atweb-screenshot-row-with-relation.jpg}
+  \end{center}
+
+  \pause
+
+  $$output = waterInput + biomassInput$$
+
+  \pause
+
+  {
+    \color{red}
+    $$1000 = 20 + 1000$$
+  }
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Part II: RDF data validation: survey of the state of the art                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \partslide{Part II}{RDF data validation: survey of the state of the art}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Shape Expressions}
+
+  Pending.
+\end{frame}
+
+\begin{frame}
+  \frametitle{SHACL}
+
+  Pending.
+\end{frame}
+
+\begin{frame}
+  \frametitle{Plain SPARQL}
+
+  Pending.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Part III: Implementation                                                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \partslide{Part III}{Implementation}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Examples of real constraints}
+
+  Pending.
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \Huge{Demo}
+  \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Part IV: Conclusions                                                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \partslide{Part IV}{Conclusions}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Conclusions}
+
+  Pending.
+\end{frame}
+
+\begin{frame}
+  \frametitle{Future work}
+
+  Pending.
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \Huge{Thanks!}
+  \end{center}
 \end{frame}
 
 % \begin{frame}
@@ -321,11 +542,5 @@
 %
 %   \textbf{At least 10 of them can be easily translated into SPARQL constraints.}
 % \end{frame}
-
-\begin{frame}
-  \begin{center}
-    \Huge{Thanks!}
-  \end{center}
-\end{frame}
 
 \end{document}
