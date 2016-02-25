@@ -21,11 +21,12 @@
 %   Future work
 %   Thanks
 
-
 \documentclass{beamer}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{xspace}
+\usepackage{fancyvrb} % Needed for \verbatim environment
+\usepackage{hyperref} % Needed for \href
 
 % Convenience macros
 \newcommand{\atweb}{\textbf{@Web}\xspace}
@@ -36,6 +37,8 @@
     \huge{#2}
   \end{center}
 }
+\newcommand{\fnhref}[2]{\href{#2}{#1}\footnote{\url{#2}}}
+\newcommand{\ifnhref}[2]{\textit{\fnhref{#1}{#2}}}
 
 % Remove navigation controls
 \usenavigationsymbolstemplate{}
@@ -98,7 +101,8 @@
     \item Data is stored in an RDF graph following a predefined OWL ontology.
 
     \item Goal of my internship: add integrity constraint checking capabilities
-      to the \atweb platform.
+      to the \fnhref{\atweb
+      platform}{http://www6.inra.fr/cati-icat-atweb/Web-platform}.
   \end{itemize}
 \end{frame}
 
@@ -197,6 +201,15 @@
   }
 \end{frame}
 
+\begin{frame}
+  \frametitle{Example guideline}
+  \framesubtitle{Underlying RDF graph}
+
+  \begin{center}
+    \includegraphics[width=11cm]{underlying-graph.png}
+  \end{center}
+\end{frame}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Part II: RDF data validation: survey of the state of the art                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -207,20 +220,512 @@
 
 \begin{frame}
   \frametitle{Shape Expressions}
+  \framesubtitle{Introduction}
 
-  Pending.
+  \begin{itemize}
+    \item It's a validation language for RDF graphs, inspired in regular
+      expressions.
+
+    \item Allows specifying patterns, or \textit{shapes}, that triples in an
+      RDF graph must conform to.
+
+    \item Lets one decide whether a RDF graph satisfies all the required shapes.
+
+    \item Also possible to deduce which triples conform to which shapes (useful
+      for classification.)
+
+    \item Roughly comparable to what the Data Definition Language (DDL) does
+      for SQL databases, or what XML Schema does for XML documents.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Shape Expressions}
+  \framesubtitle{Example shape}
+
+  \begin{Verbatim}
+<UserShape> {
+  ( foaf:name xsd:string |
+    foaf:givenName xsd:string+ ,
+    foaf:familyName xsd:string
+  ),
+
+  foaf:mbox shex:IRI ?
+}
+  \end{Verbatim}
+
+  \pause
+
+  \begin{columns}
+    \column{0.5\textwidth}
+
+    \textbf{Valid}
+
+    \begin{Verbatim}[fontsize=\scriptsize]
+:Bob
+  foaf:givenName "Bob" ;
+  foaf:familyName "Smith" ;
+  foaf:mbox <mail:bob@example.org> .
+
+:Thompson
+  foaf:givenName "Joe", "Joseph" ;
+  foaf:familyName "Thompson" ;
+  foaf:mbox <mail:joe@example.org> .
+    \end{Verbatim}
+    \column{0.5\textwidth}
+
+    \textbf{Invalid}
+
+    \begin{Verbatim}[fontsize=\scriptsize, formatcom=\color{red}]
+# missing :familyName.
+:Anna
+  foaf:givenName "Bob" ;
+  foaf:mbox <mail:bob@example.org> .
+
+# multiple foaf:names.
+:Pete
+  foaf:name "Peter", "Pete" ;
+    \end{Verbatim}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Shape Expressions}
+  \framesubtitle{Semantic actions}
+
+  \textit{Semantic actions} are arbitrary snippets of code that are executed
+  after a rule is evaluated.
+
+  \begin{itemize}
+    \item Possible to express more complex validation rules (e.g. arithmetic
+      constraints).
+
+    \item Multiple programming languages can be supported, depending on the
+      implementation of shape expressions.
+
+    \item Other uses: transforming RDF triplets into different formats,
+      generating forms for user interfaces automatically, etc.
+  \end{itemize}
+
+  \pause
+
+  Example:
+
+  \begin{Verbatim}[fontsize=\scriptsize]
+    :reportedOn xsd:dateTime
+        %js{ report = _.o; return true; %},
+    (:reproducedBy @<EmployeeShape>,
+     :reproducedOn xsd:dateTime
+        %js{ return _.o.lex > report.lex; %}
+        %sparql{ ?s :reportedOn ?rpt . FILTER (?o > ?rpt) %}
+    )
+  \end{Verbatim}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Shape Expressions}
+  \framesubtitle{Available implementations}
+
+  \begin{itemize}
+    \item \ifnhref{ShExcala}{http://labra.github.io/ShExcala/}
+
+    \begin{itemize}
+      \item Implemented in the Scala programming language
+
+      \item Can be used from any JVM language (good for \atweb)
+
+      \item \textbf{Doesn't implement semantic actions}
+    \end{itemize}
+
+    \item \ifnhref{FancyShExDemo}{https://www.w3.org/2013/ShEx/FancyShExDemo}
+
+    \begin{itemize}
+      \item Implemented in the JavaScript programming language
+
+      \item Prototype/proof-of-concept implementation of shape expressions
+
+      \item Handles semantic actions
+
+      \item Able to generate SPARQL queries
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Shape Expressions}
+  \framesubtitle{Problems}
+
+  \begin{itemize}
+    \item Semantic actions are absolutely needed if, in addition to the shape
+      of our RDF graph, we want to validate the data itself (e.g. $output =
+      waterInput + biomassInput$).
+
+    \item The only available implementation for Shape Expressions that actually
+      supports semantic actions is a proof of concept library built in
+      JavaScript (FancyShExDemo).
+
+    \item Hard to integrate into a JVM-based app.
+
+    \item The Shape Expressions draft doesn't specify how semantic actions
+      should be implemented, thus if we move to another Shape Expressions
+      engine in the future, our semantic actions could break.
+  \end{itemize}
 \end{frame}
 
 \begin{frame}
   \frametitle{SHACL}
+  \framesubtitle{Introduction}
 
-  Pending.
+  \begin{itemize}
+    \item \fnhref{SHACL}{https://www.w3.org/TR/shacl/} is a language for
+      describing constraints in RDF graphs.
+
+    \item Constraints are grouped into \textit{shapes} that apply to nodes in a
+      \textit{data graph}.
+
+    \item Shapes are described in RDF and stored in a \textit{shapes graph}.
+
+    \item The simplest interface to a SHACL processor has two inputs:
+
+    \begin{itemize}
+      \item A data graph containing the data to be validated
+
+      \item A shapes graph containing shape definitions
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{SHACL}
+  \framesubtitle{An example shape}
+
+  \begin{columns}[t]
+    \column{0.45\textwidth}
+
+    \textbf{Shape}
+
+    \begin{Verbatim}[fontsize=\footnotesize]
+ex:UserShape
+  a sh:Shape ;
+  sh:property [
+    sh:predicate foaf:name ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:predicate foaf:mbox ;
+    sh:nodeKind sh:IRI ;
+    sh:minCount 1 ;
+  ] .
+    \end{Verbatim}
+
+    \pause
+
+    \column{0.55\textwidth}
+
+    \textbf{Valid data}
+
+    \begin{Verbatim}[fontsize=\tiny]
+:User1
+  a foaf:Person ;
+  foaf:name "Michel Thomas" ;
+  foaf:mbox <mailto:mt@example.org> .
+
+:User2
+  a foaf:Person ;
+  foaf:name "Bob Lee",
+  foaf:mbox <mailto:bl@example.org> ;
+  foaf:mbox <mailto:bob.lee@example.org> .
+    \end{Verbatim}
+
+    \textbf{Invalid data}
+
+    \begin{Verbatim}[fontsize=\tiny, formatcom=\color{red}]
+# More than one foaf:name
+:User3
+  a foaf:Person ;
+  foaf:name "Paul McCartney" ;
+  foaf:name "Sir James Paul McCartney" ;
+  foaf:mbox <mailto:paul.mccartney@example.org> .
+
+# Missing foaf:mbox
+:User4
+  a foaf:Person ;
+  foaf:name "Donald Knuth".
+    \end{Verbatim}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{SHACL}
+  \framesubtitle{Native constraints}
+
+  \begin{Verbatim}[fontsize=\scriptsize]
+ex:LanguageExampleShape
+  a sh:Shape ;
+  sh:scopeClass ex:Country ;
+  sh:constraint [
+    sh:message "Values must be literals with German language tag." ;
+    sh:sparql """
+      SELECT $this ($this AS ?subject)
+                   (ex:germanLabel AS ?predicate)
+                   (?value AS ?object)
+      WHERE {
+        $this ex:germanLabel ?value .
+        FILTER (!isLiteral(?value) || !langMatches(lang(?value), "de"))
+      }
+      """ ;
+  ] .
+  \end{Verbatim}
+
+  \pause
+
+  \begin{columns}[t]
+    \column{0.5\textwidth}
+
+    \textbf{Valid graph}
+
+    \begin{Verbatim}[fontsize=\footnotesize]
+ex:ValidCountry
+  a ex:Country ;
+  ex:germanLabel "Spanien"@de .
+    \end{Verbatim}
+
+    \column{0.5\textwidth}
+
+    \textbf{Invalid graph}
+
+    \begin{Verbatim}[fontsize=\footnotesize, formatcom=\color{red}]
+ex:InvalidCountry
+  a ex:Country ;
+  ex:germanLabel "Spain"@en .
+    \end{Verbatim}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{SHACL}
+  \framesubtitle{A sample integrity constraint implemented in SHACL (I)}
+
+  \vspace{0.5cm}
+
+  \textit{``The output quantity of a step is equal to the sum of the quantity
+  of water used and the quantity of biomass present in the step.''}
+
+  $$output = waterInput + biomassInput$$
+
+  \begin{center}
+    \includegraphics[width=11cm]{underlying-graph.png}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{SHACL}
+  \framesubtitle{A sample integrity constraint implemented in SHACL (II)}
+
+  \begin{columns}[t]
+    \column{0.5\textwidth}
+
+    \begin{Verbatim}[fontsize=\tiny]
+anno:MillingSolidOutputQuantityRelationshipShape
+  a sh:Shape ;
+  sh:scopeClass bioraf:milling_solid_quantity_output_relation ;
+
+  sh:filterShape [
+    sh:inverseProperty [
+      sh:predicate anno:hasForRelation ;
+      sh:valueShape [
+        sh:inverseProperty [
+          sh:predicate anno:hasForRow ;
+          sh:valueClass anno:Table ;
+          sh:minCount 1 ;
+          sh:maxCount 1 ;
+        ] ;
+      ] ;
+      sh:minCount 1 ;
+      sh:maxCount 1 ;
+    ]
+  ] ;
+
+  sh:property [
+    sh:predicate core:hasAccessConcept ;
+    sh:qualifiedValueShape [
+      sh:property [
+        sh:predicate rdf:type ;
+        sh:hasValue bioraf:biomass_quantity
+      ]
+    ] ;
+    sh:qualifiedMinCount 1 ;
+    sh:qualifiedMaxCount 1 ;
+  ] ;
+    \end{Verbatim}
+
+    \column{0.5\textwidth}
+
+    \begin{Verbatim}[fontsize=\tiny]
+
+
+
+
+
+sh:property [
+  sh:predicate core:hasAccessConcept ;
+  sh:qualifiedValueShape [
+    sh:property [
+      sh:predicate rdf:type ;
+      sh:hasValue bioraf:water_quantity
+    ]
+  ] ;
+  sh:qualifiedMinCount 1 ;
+  sh:qualifiedMaxCount 1 ;
+] ;
+
+sh:property [
+  sh:predicate core:hasResultConcept ;
+  sh:valueClass bioraf:output_solid_constituent_quantity ;
+  sh:minCount 1 ;
+  sh:maxCount 1 ;
+] ;
+    \end{Verbatim}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{SHACL}
+  \framesubtitle{A sample integrity constraint implemented in SHACL (IIII)}
+
+  \begin{Verbatim}[fontsize=\tiny]
+  sh:constraint [
+    sh:predicate anno:width ;
+    sh:sparql """
+      SELECT $this ($this AS ?subject)
+             (CONCAT("Output quantity must be the sum of the solid and liquid input quantities
+                      (solid=", STR(?solid_qty),
+                     ", liquid=", STR(?liquid_qty),
+                     ", output=", STR(?output_qty), ")") as ?message)
+      WHERE {
+        $this core:hasAccessConcept ?solid ;
+              core:hasAccessConcept ?liquid ;
+              core:hasResultConcept ?output .
+
+        ?solid a bioraf:biomass_quantity ;
+               anno:hasForFS [a anno:Scalar ;
+                              anno:hasForFuzzyElement /
+                              anno:hasForMaxKernel ?solid_qty] .
+
+        ?liquid a bioraf:water_quantity ;
+                anno:hasForFS [a anno:Scalar ;
+                               anno:hasForFuzzyElement /
+                               anno:hasForMaxKernel ?liquid_qty] .
+
+        ?output a bioraf:output_solid_constituent_quantity ;
+                anno:hasForFS [a anno:Scalar ;
+                               anno:hasForFuzzyElement /
+                               anno:hasForMaxKernel ?output_qty] .
+
+        FILTER (xsd:float(?output_qty) !=
+                xsd:float(?solid_qty) + xsd:float(?liquid_qty))
+      }
+    """ ;
+] .
+
+  \end{Verbatim}
+\end{frame}
+
+\begin{frame}
+  \frametitle{SHACL}
+  \framesubtitle{Pros and cons}
+
+  Pros:
+
+  \begin{itemize}
+    \item Constraints are represented as RDF triples; no additional storage
+      medium needed.
+    \item Rich core constraints vocabulary.
+    \item Possible to define arbitrary constraints using SPARQL.
+    \item SHACL implementation readily available (Java language).
+    \item Already being used in the industry (TopQuadrant).
+  \end{itemize}
+
+  Cons:
+
+  \begin{itemize}
+    \item Constraints involving properties from different nodes require
+      describing the graph structure within SPARQL queries, rendering the
+      SHACL shapes redundant.
+  \end{itemize}
 \end{frame}
 
 \begin{frame}
   \frametitle{Plain SPARQL}
+  \framesubtitle{Idea}
 
-  Pending.
+  \begin{itemize}
+    \item Write \fnhref{SPARQL}{https://www.w3.org/TR/sparql11-query} queries
+      that implement \textit{negative constraints}: only return data that
+      violates a particular constraint.
+
+    \item In our particular case, we will return relation instances that
+      violate a constraint.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Plain SPARQL}
+  \framesubtitle{Example constraint (I)}
+
+  \vspace{0.5cm}
+
+  \textit{``The output quantity of a step is equal to the sum of the quantity
+  of water used and the quantity of biomass present in the step.''}
+
+  $$output = waterInput + biomassInput$$
+
+  \begin{center}
+    \includegraphics[width=11cm]{underlying-graph.png}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Plain SPARQL}
+  \framesubtitle{Example constraint (II)}
+
+  \begin{Verbatim}[fontsize=\tiny]
+SELECT ?docid ?doctitle ?tableid ?tabletitle ?rownum  ?solid_qty ?liquid_qty ?output_qty WHERE {
+?doc anno:hasForID ?docid ;
+     dc:title ?doctitle ;
+     anno:hasTable ?table .
+
+?table anno:hasForID ?tableid ;
+       dc:title ?tabletitle ;
+       anno:hasForRow ?row .
+
+?row anno:hasForRowNumber ?rownum ;
+     anno:hasForRelation ?relation .
+
+?relation a bioraf:milling_solid_quantity_output_relation ;
+          core:hasAccessConcept ?solid ;
+          core:hasAccessConcept ?liquid ;
+          core:hasResultConcept ?output] .
+
+?solid a bioraf:biomass_quantity ;
+       anno:hasForFS [a anno:Scalar ;
+                      anno:hasForFuzzyElement /
+                      anno:hasForMaxKernel ?solid_qty] .
+
+?liquid a bioraf:water_quantity ;
+        anno:hasForFS [a anno:Scalar ;
+                       anno:hasForFuzzyElement /
+                       anno:hasForMaxKernel ?liquid_qty] .
+
+?output a bioraf:output_solid_constituent_quantity ;
+        anno:hasForFS [a anno:Scalar ;
+                       anno:hasForFuzzyElement /
+                       anno:hasForMaxKernel ?output_qty] .
+
+FILTER (xsd:float(?output_qty) != xsd:float(?solid_qty) + xsd:float(?liquid_qty)) }
+  \end{Verbatim}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -229,12 +734,6 @@
 
 \begin{frame}
   \partslide{Part III}{Implementation}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Examples of real constraints}
-
-  Pending.
 \end{frame}
 
 \begin{frame}
@@ -254,13 +753,41 @@
 \begin{frame}
   \frametitle{Conclusions}
 
-  Pending.
+  \begin{itemize}
+    \item Shape Expressions are well suited for describing the structure of a
+      graph and they can potentially be extended to do more complex kinds of
+      validation via semantic actions. For the moment there are no
+      feature-complete and production-ready implementations.
+
+    \item SHACL also works well for describing the shape of a graph and is
+      production-ready but the mechanism for expressing native constraints in
+      SPARQL requires describing the shape of the graph again within the SPARQL
+      query, rendering SHACL redundant.
+
+    \item SPARQL remains the best suited tool for expressing the kind of
+      constraints required in the \atweb platform.
+  \end{itemize}
 \end{frame}
 
 \begin{frame}
   \frametitle{Future work}
 
-  Pending.
+  \begin{itemize}
+    \item Implement \textit{positive constraints} in \atweb for classification
+      purposes (i.e. return all relation instances that satisfy a set of
+      conditions)
+
+    \item Propose a specification for semantic actions in Shape Expressions
+
+    \item Extend ShExcala (Shape Expressions engine) with a usable
+      implementation of semantic actions
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \Huge{Questions?}
+  \end{center}
 \end{frame}
 
 \begin{frame}
